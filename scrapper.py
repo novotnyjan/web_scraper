@@ -166,7 +166,7 @@ if __name__ == "__main__":
     csv_file = 'data.csv'
 
     options = Options()
-    options.add_argument("headless")
+    #options.add_argument("headless")
 
     driver = webdriver.Edge(options = options)
     print("browser opened")
