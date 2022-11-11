@@ -3,18 +3,14 @@ import json
 import csv
 import time
 
-def scrape(url, page, error_wait = 1):
+def scrape(url, page, error_wait = 0.5):
     while True:
-        t_request_start = time.perf_counter()
         request = requests.post(url, {'page':page})
-        t_request_duration = time.perf_counter() - t_request_start
-        print(f"waiting for request time: {t_request_duration}")
         if request.status_code == 200:
             break
         print(f"unexpected request status code: '{request.status_code}', sending request again in {error_wait}")
         time.sleep(error_wait)
     
-    t_computation_start = time.perf_counter()
     raw_data = request.json()['data']
     data = []
     for i in range(len(raw_data)):
@@ -26,8 +22,6 @@ def scrape(url, page, error_wait = 1):
         'web': raw_data[i]['contact']['web']
          }
         data.append(temp_data)
-    t_computation_duration = time.perf_counter() - t_computation_start
-    print(f"time spent on computation: {t_computation_duration}")
     return data
         
 def create_json(data, json_file):
@@ -60,7 +54,7 @@ def create_csv(data, csv_file):
         for i in range(len(data)):
             csv_writer.writerow(data[i].values())
     
-    print(f"data from {page} transfered into csv format and saved to '{csv_file}'")
+    print(f"data from page {page} transfered into csv format and saved to '{csv_file}'")
 
 def append_csv(data, csv_file):
     """
@@ -75,18 +69,17 @@ def append_csv(data, csv_file):
     print(f"data from {page} transfered into csv format and saved to '{csv_file}'")
     
 if __name__ == "__main__":
+    t_start = time.perf_counter()
+    
     url = "https://is-api.dent.cz/api/v1/web/workplaces"
     page = 1
 
-    json_file = "data.json"
-    csv_file = "data.csv"
+    json_file = "data_sync.json"
+    csv_file = "data_sync.csv"
 
     data = scrape(url, page)
-    t_io_start = time.perf_counter()
     create_json(data, json_file)
     create_csv(data,csv_file)
-    t_io_duration = time.perf_counter() - t_io_start
-    print(f"IO operation duration: {t_io_duration}")
     page += 1
 
     while True:
@@ -96,3 +89,5 @@ if __name__ == "__main__":
         append_json(data, json_file)
         append_csv(data,csv_file)
         page += 1
+    
+    print(f"finished in {time.perf_counter() - t_start} sec")

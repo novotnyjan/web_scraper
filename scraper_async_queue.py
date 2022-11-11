@@ -3,7 +3,9 @@ import aiohttp
 import aiofiles
 import json
 import platform
+import time
 from colorama import Fore
+from colorama import Style
 
 async def fetch_response(url : str, session : aiohttp.ClientSession, queue : asyncio.Queue, producer_id : int, error_wait = 0.5) -> None:
     """
@@ -19,19 +21,19 @@ async def fetch_response(url : str, session : aiohttp.ClientSession, queue : asy
         while True:
             resp = await session.post(url, data = {"page": _page}, ssl=False)
             if resp.status == 200:
-                print(Fore.BLUE+f"producer {producer_id} response status for page {_page} is {resp.status}")
+                print(Fore.BLUE+f"producer {producer_id} response status for page {_page} is {resp.status}"+Style.RESET_ALL)
                 break
-            print(Fore.BLUE+f"unexpected request status code for page {_page}: '{resp.status}', sending request again in {error_wait}")
+            print(Fore.BLUE+f"unexpected request status code for page {_page}: '{resp.status}', sending request again in {error_wait}"+Style.RESET_ALL)
             await asyncio.sleep(error_wait)
 
         resp = await resp.json()
         
         #if there are no data on current page, terminate task
         if resp['data'] == []:
-            print(Fore.BLUE+f"no data on page {_page}, closing task {producer_id}")
+            print(Fore.BLUE+f"no data on page {_page}, closing task {producer_id}"+Style.RESET_ALL)
             break
         
-        print(Fore.BLUE+f"producer {producer_id} put data into queue")
+        print(Fore.BLUE+f"producer {producer_id} put data into queue"+Style.RESET_ALL)
         await queue.put((resp, _page))
 
 async def process_response(queue : aiohttp.ClientSession, json_file : str, consumer_id: int) -> None:
@@ -56,7 +58,7 @@ async def process_response(queue : aiohttp.ClientSession, json_file : str, consu
         async with aiofiles.open(json_file, 'a') as file:
             data_json = json.dumps(data)
             await file.write(data_json + "," + "\n")
-            print(Fore.RED+f"consumer number {consumer_id} saved data from page {_page} to {json_file}")
+            print(Fore.RED+f"consumer number {consumer_id} saved data from page {_page} to {json_file}"+Style.RESET_ALL)
         queue.task_done()
 
 async def main(nprod: int, ncons: int) -> None:
@@ -87,10 +89,12 @@ async def main(nprod: int, ncons: int) -> None:
             c.cancel()
 
 if __name__ == '__main__':
+    t_start = time.perf_counter()
+
     #url of api from site ("https://www.dent.cz/zubni-lekari") inspection using devtools
     url = "https://is-api.dent.cz/api/v1/web/workplaces"
     
-    json_file = 'queue_data.json'
+    json_file = 'data_async_queue.json'
     nprod = 10
     ncons = 10
     
@@ -126,3 +130,5 @@ if __name__ == '__main__':
         file.seek(- offset_last_line,2)
         file.write(end_line)
         file.truncate()
+    
+    print(f"finished in {time.perf_counter() - t_start}")

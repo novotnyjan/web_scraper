@@ -58,6 +58,8 @@ async def main(ntasks: int) -> None:
         await asyncio.gather(*tasks)
 
 if __name__ == '__main__':
+    t_start = time.perf_counter()
+
     #url of api from site ("https://www.dent.cz/zubni-lekari") inspection using devtools
     url = "https://is-api.dent.cz/api/v1/web/workplaces"
 
@@ -77,14 +79,12 @@ if __name__ == '__main__':
     #sort result using page number stored in result_unsorted[j][0]
     result = []
     print("sorting data")
-    t_start = time.perf_counter()
     for i in range(len(result_unsorted)):
         for j in range(len(result_unsorted)):
             if result_unsorted[j][0] == i+1:
                 result.extend(result_unsorted[j][1])
                 del result_unsorted[j]
                 break
-    print(f"data sorted in {time.perf_counter() - t_start}")
     
     #save result in json format
     with open(json_file, 'w') as file:
@@ -98,3 +98,5 @@ if __name__ == '__main__':
         for i in range(len(result)):
             csv_writer.writerow(result[i].values())
         print(f"data saved to {csv_file}")
+    
+    print(f"finished in {time.perf_counter() - t_start} sec")
