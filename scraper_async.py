@@ -48,6 +48,35 @@ async def scrape(url : str, session : aiohttp.ClientSession, task_id : int, erro
         result_unsorted.append(data)
         print(f"data from page {_page} in memory")
 
+def save_json(json_file : str, result : list) -> None:
+    with open(json_file, 'w') as file:
+        json.dump(result, file, indent=4)
+        print(f"data saved to {json_file}")
+
+def save_csv(csv_file : str, result : list) -> None:
+    with open(csv_file, 'w', newline='') as file:
+        csv_writer = csv.writer(file)
+        csv_writer.writerow(result[0].keys())
+        for i in range(len(result)):
+            csv_writer.writerow(result[i].values())
+        print(f"data saved to {csv_file}")
+
+def sort_data(result_unsorted : list) -> list:
+    """
+    Takes list of lists containing page and list of dicts and returns list of dicts ordered by page number.
+
+    [[page, dicts_page],...] -> [dicts_1[0], ..., dicts_1[-1], dicts_2[0], ...]
+    """
+    result = []
+    print("sorting data")
+    for i in range(len(result_unsorted)):
+        for j in range(len(result_unsorted)):
+            if result_unsorted[j][0] == i+1:
+                result.extend(result_unsorted[j][1])
+                del result_unsorted[j]
+                break
+    return result
+
 async def main(ntasks: int) -> None:
     """
     Main coroutine that handles initialization tasks and their proper termination.
@@ -76,27 +105,9 @@ if __name__ == '__main__':
     #create and start even loop with ntasks number of tasks
     asyncio.run(main(ntasks))
 
-    #sort result using page number stored in result_unsorted[j][0]
-    result = []
-    print("sorting data")
-    for i in range(len(result_unsorted)):
-        for j in range(len(result_unsorted)):
-            if result_unsorted[j][0] == i+1:
-                result.extend(result_unsorted[j][1])
-                del result_unsorted[j]
-                break
+    result = sort_data(result_unsorted)
     
-    #save result in json format
-    with open(json_file, 'w') as file:
-        json.dump(result, file, indent=4)
-        print(f"data saved to {json_file}")
-
-    #save result in csv format
-    with open(csv_file, 'w', newline='') as file:
-        csv_writer = csv.writer(file)
-        csv_writer.writerow(result[0].keys())
-        for i in range(len(result)):
-            csv_writer.writerow(result[i].values())
-        print(f"data saved to {csv_file}")
+    save_json(json_file, result)
+    save_csv(csv_file, result)
     
     print(f"finished in {time.perf_counter() - t_start} sec")
